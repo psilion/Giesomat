@@ -1,0 +1,61 @@
+#define FLOWMETERGPIO  27
+const int moistureGPIO = 35;
+int GPIOOUT = 17;
+int moistureValue = 0;
+
+int vielGiessen = 10;
+int mittelGiessen = 5;
+int wenigGiessen = 1;
+
+volatile byte pulseCount;
+long previousMillis = 0;
+
+void IRAM_ATTR pulseCounter()
+{
+  pulseCount++;
+   Serial.print("PulseCount: ");
+  Serial.println(pulseCount);
+}
+
+void giessen(int pulses)
+{
+  pulseCount = 0;
+  previousMillis = millis();
+  while(pulseCount < pulses || millis() - previousMillis < 10000){
+    digitalWrite(GPIOOUT, LOW);
+    Serial.println("Gießen");
+  }
+  digitalWrite(GPIOOUT, HIGH);
+  Serial.print("Gießen beendet. PulseCount: ");
+  Serial.print(pulseCount);
+  Serial.println(", Sekunden vergangen: ");
+  Serial.println((millis() - previousMillis)/1000);
+}
+void setup() {
+  Serial.begin(115200);
+  delay(1000);
+  pinMode (GPIOOUT, OUTPUT);
+  digitalWrite(GPIOOUT, HIGH);
+
+}
+
+void loop() {
+    moistureValue = analogRead(moistureGPIO);
+  Serial.print("Feuchtigkeit: ");
+  Serial.println(moistureValue);
+  attachInterrupt(digitalPinToInterrupt(FLOWMETERGPIO), pulseCounter, FALLING);
+  switch (moistureValue) {
+    case 4000 ... 2801:
+      Serial.println("Sehr trocken, viel Gießen notwendig");
+      giessen(vielGiessen);
+    case 2800 ... 2001:
+      Serial.println("Trocken, mäßig Gießen notwendig");
+      giessen(mittelGiessen);
+    case 2000 ... 1700:
+      Serial.println("Feucht, sehr wenig Gießen notwendig");
+      giessen(wenigGiessen);
+    default:
+      Serial.println("Sehr feucht, kein Gießen notwendig");
+  }
+  delay(60000);
+}
