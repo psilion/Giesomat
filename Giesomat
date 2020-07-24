@@ -2,7 +2,7 @@ const int moistureGPIO = 35;
 int GPIOOUT = 17;
 int moistureValue = 0;
 
-int vielGiessen = 3;
+int vielGiessen = 4;
 int mittelGiessen = 2;
 int wenigGiessen = 1;
 #define TIME_TO_SLEEP  3600        /* Time ESP32 will go to sleep (in seconds) */
