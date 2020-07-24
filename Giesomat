@@ -75,5 +75,5 @@ void loop() {
       u8x8.println("Sehr feucht");
       u8x8.println(displayvalue);
       }
-  delay(60000);
+  delay(12*3600*1000);
   }
