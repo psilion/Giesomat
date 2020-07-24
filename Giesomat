@@ -2,34 +2,16 @@ const int moistureGPIO = 35;
 int GPIOOUT = 17;
 int moistureValue = 0;
 
-int vielGiessen = 10;
-int mittelGiessen = 5;
+int vielGiessen = 3;
+int mittelGiessen = 2;
 int wenigGiessen = 1;
-#define TIME_TO_SLEEP  10        /* Time ESP32 will go to sleep (in seconds) */
+#define TIME_TO_SLEEP  3600        /* Time ESP32 will go to sleep (in seconds) */
 #define uS_TO_S_FACTOR 1000000ULL  /* Conversion factor for micro seconds to seconds */
-#include <esp_deep_sleep.h>    
-
-RTC_DATA_ATTR int bootCount = 0;
-/*
-Method to print the reason by which ESP32
-has been awaken from sleep
-*/
-
-void print_wakeup_reason(){
-  esp_deep_sleep_wakeup_cause_t wakeup_reason;
-
-  wakeup_reason = esp_deep_sleep_get_wakeup_cause();
-
-  switch(wakeup_reason)
-  {
-    case 1  : Serial.println("Wakeup caused by external signal using RTC_IO"); break;
-    case 2  : Serial.println("Wakeup caused by external signal using RTC_CNTL"); break;
-    case 3  : Serial.println("Wakeup caused by timer"); break;
-    case 4  : Serial.println("Wakeup caused by touchpad"); break;
-    case 5  : Serial.println("Wakeup caused by ULP program"); break;
-    default : Serial.println("Wakeup was not caused by deep sleep"); break;
-  }
-}
+#include <esp_deep_sleep.h>
+//OLED
+#include <U8x8lib.h>  
+U8X8_SSD1306_128X64_NONAME_SW_I2C u8x8(/* clock=*/ 15, /* data=*/ 4, /* reset=*/ 16);
+String displayvalue;
 
 void giessen(int seconds)
 {
@@ -37,51 +19,61 @@ void giessen(int seconds)
   Serial.println("Gießen");
   delay(seconds*1000);
   digitalWrite(GPIOOUT, HIGH);
-  Serial.print("Gießen beendet.");
+  Serial.println("Gießen beendet.");
 }
 
 void setup() {
   Serial.begin(115200);
   delay(1000);
-  //Increment boot number and print it every reboot
-  ++bootCount;
-  Serial.println("Boot number: " + String(bootCount));
-  //Print the wakeup reason for ESP32
-  print_wakeup_reason();
-  esp_deep_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
-  Serial.println("Setup ESP32 to sleep for every " + String(TIME_TO_SLEEP) +  " Seconds");
+
+  u8x8.begin();
+  u8x8.setFont(u8x8_font_chroma48medium8_r);
+  
   
   pinMode (GPIOOUT, OUTPUT);
   digitalWrite(GPIOOUT, HIGH);
   
+ 
   
+ 
+  delay(1000);
 
+ }
+
+void loop() {
+  u8x8.clearDisplay();
   moistureValue = analogRead(moistureGPIO);
+  displayvalue = moistureValue;
   Serial.print("Feuchtigkeit: ");
   Serial.println(moistureValue);
+  u8x8.println("");
     if (moistureValue > 2800){
       Serial.println("Sehr trocken, viel Gießen notwendig: ");
       Serial.println(moistureValue);
+      u8x8.clearDisplay();
+      u8x8.println("Sehr trocken, ");
+      u8x8.println(displayvalue);
       giessen(vielGiessen);
-      }else if (moistureValue <=2800 && moistureValue > 2000){
+      }else if (moistureValue <=2800 && moistureValue > 2300){
       Serial.print("Trocken, mäßig Gießen notwendig: ");
       Serial.println(moistureValue);
+      u8x8.clearDisplay();
+      u8x8.println("Trocken");
+      u8x8.println(displayvalue);
       giessen(mittelGiessen);
-      }else if (moistureValue <= 2000 && moistureValue > 1700){
+      }else if (moistureValue <= 2300 && moistureValue > 2000){
+      u8x8.clearDisplay();
+      u8x8.println("Feucht");
       Serial.print("Feucht, sehr wenig Gießen notwendig: ");
       Serial.println(moistureValue);
+      u8x8.println(displayvalue);
       giessen(wenigGiessen);
       }else {
       Serial.print("Sehr feucht, kein Gießen notwendig: ");
-      Serial.println(moistureValue);}
-  
-  
-  
-  
-  Serial.println("Going to sleep now");
-  delay(1000);
-  esp_deep_sleep_start();
-  Serial.println("This will never be printed");
-}
-
-void loop() {}
+      Serial.println(moistureValue);
+      u8x8.clearDisplay();
+      u8x8.println("Sehr feucht");
+      u8x8.println(displayvalue);
+      }
+  delay(60000);
+  }
